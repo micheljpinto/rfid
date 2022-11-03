@@ -1,45 +1,3 @@
-/**************************************************************************/
-/*! 
-    @file     readMifareClassicIrq.pde
-    @author   Adafruit Industries
-	@license  BSD (see license.txt)
-
-    This example will wait for any ISO14443A card or tag, and
-    depending on the size of the UID will attempt to read from it.
-   
-    If the card has a 4-byte UID it is probably a Mifare
-    Classic card, and the following steps are taken:
-   
-    Reads the 4 byte (32 bit) ID of a MiFare Classic card.
-    Since the classic cards have only 32 bit identifiers you can stick
-	them in a single variable and use that to compare card ID's as a
-	number. This doesn't work for ultralight cards that have longer 7
-	byte IDs!
-    
-    Note that you need the baud rate to be 115200 because we need to
-	print out the data and read from the card at the same time!
-
-This is an example sketch for the Adafruit PN532 NFC/RFID breakout boards
-This library works with the Adafruit NFC breakout 
-  ----> https://www.adafruit.com/products/364
- 
-Check out the links above for our tutorials and wiring diagrams 
-
-This example is for communicating with the PN532 chip using I2C. Wiring 
-should be as follows:
-  PN532 SDA -> SDA pin
-  PN532 SCL -> SCL pin
-  PN532 IRQ -> D2
-  PN532 SDA -> 3.3v (with 2k resistor)
-  PN532 SCL -> 3.3v (with 2k resistor)
-  PN532 3.3v -> 3.3v
-  PN532 GND -> GND
-
-Adafruit invests time and resources providing this open source code, 
-please support Adafruit and open-source hardware by purchasing 
-products from Adafruit!
-*/
-/**************************************************************************/
 #include <Wire.h>
 #include <Adafruit_PN532.h>
 
@@ -49,7 +7,7 @@ products from Adafruit!
 #define PN532_IRQ   (5)
 #define PN532_RESET (4)  // Not connected by default on the NFC Shield
 
-const int DELAY_BETWEEN_CARDS = 500;
+const int DELAY_BETWEEN_CARDS = 1000;
 long timeLastCardRead = 0;
 boolean readerDisabled = false;
 int irqCurr;
@@ -102,6 +60,8 @@ void loop(void) {
   }
 }
 
+//**************** NFC FUNCTIONS ***************
+
 void startListeningToNFC() {
   // Reset our IRQ indicators
   irqPrev = irqCurr = HIGH;
@@ -149,3 +109,5 @@ String handleCardDetected() {
     // The reader will be enabled again after DELAY_BETWEEN_CARDS ms will pass.
     readerDisabled = true;
 }
+
+//**************** SERVER FUNCTIONS*************
