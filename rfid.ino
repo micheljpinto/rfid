@@ -2,62 +2,89 @@
 #include <Adafruit_PN532.h>
 
 
+//************CONFIG I2C***************************************************
 // If using the breakout or shield with I2C, define just the pins connected
 // to the IRQ and reset lines.  Use the values below (2, 3) for the shield!
 #define PN532_IRQ   (5)
 #define PN532_RESET (4)  // Not connected by default on the NFC Shield
-
 const int DELAY_BETWEEN_CARDS = 1000;
 long timeLastCardRead = 0;
 boolean readerDisabled = false;
 int irqCurr;
 int irqPrev;
-
 // This example uses the IRQ line, which is available when in I2C mode.
 Adafruit_PN532 nfc(PN532_IRQ, PN532_RESET);
+String lastRead="";
+char* var[2]= {"Foi encontrado um cartão","Acionada a interrupção"};
 
+char* compareString[2]={"824051485", "4056079132"};
+//************CONFIG DATABASE*********************************************
+
+
+//************CONFIG CONNECTION ******************************************
+
+void configNFC(){
+  nfc.begin();
+
+  uint32_t versiondata = nfc.getFirmwareVersion();
+  if (! versiondata) {
+    Serial.print(F("Não foi encontrada placa PN53x"));
+    while (1); // halt
+  }
+  // Got ok data, print it out!
+  Serial.print(F("Encontrado chip PN5")); Serial.println((versiondata>>24) & 0xFF, HEX); 
+  Serial.print(F("Firmware ver. ")); Serial.print((versiondata>>16) & 0xFF, DEC); 
+  Serial.print('.'); Serial.println((versiondata>>8) & 0xFF, DEC);
+  // configure board to read RFID tags
+  nfc.SAMConfig();
+  startListeningToNFC();
+
+}
 
 void setup(void) {
   Serial.begin(115200);
   while (!Serial) delay(10); // for Leonardo/Micro/Zero
 
   Serial.println("Hello!");
+  pinMode(2,OUTPUT);
+  digitalWrite(2,LOW);
+  configNFC();
 
-  nfc.begin();
-
-  uint32_t versiondata = nfc.getFirmwareVersion();
-  if (! versiondata) {
-    Serial.print("Didn't find PN53x board");
-    while (1); // halt
-  }
-  // Got ok data, print it out!
-  Serial.print("Found chip PN5"); Serial.println((versiondata>>24) & 0xFF, HEX); 
-  Serial.print("Firmware ver. "); Serial.print((versiondata>>16) & 0xFF, DEC); 
-  Serial.print('.'); Serial.println((versiondata>>8) & 0xFF, DEC);
-  
-  // configure board to read RFID tags
-  nfc.SAMConfig();
-
-  startListeningToNFC();
 }
 
 void loop(void) {
+  //Rotina para aguardar um tempo de delay após lido o ultimo cartão
   if (readerDisabled) {
     if (millis() - timeLastCardRead > DELAY_BETWEEN_CARDS) {
       readerDisabled = false;
       startListeningToNFC();
     }
   } else {
-    irqCurr = digitalRead(PN532_IRQ);
 
-    // When the IRQ is pulled low - the reader has got something for us.
+    irqCurr = digitalRead(PN532_IRQ);
+    // Compara Interrupção do sistema para entrar somente quando houver leitura na fila
     if (irqCurr == LOW && irqPrev == HIGH) {
-       Serial.println("Got NFC IRQ");  
-       handleCardDetected(); 
+       Serial.println(var[0]);
+       Serial.println(var[1]); 
+       lastRead= handleCardDetected(); 
+
+    //Varre o array de ID's cadastrados no sistema para verificar permissão ou não de acesso 
+        for (byte i = 0; i < 2; i++)
+        {
+          if(lastRead==compareString[i]){
+            Serial.printf("Abertura permitida\n");
+            digitalWrite(2,HIGH);
+            delay(3000);
+            digitalWrite(2,LOW);
+          }
+        }
+      lastRead="";
     }
-  
+
     irqPrev = irqCurr;
-  }
+   }
+
+  
 }
 
 //**************** NFC FUNCTIONS ***************
@@ -85,25 +112,26 @@ String handleCardDetected() {
       Serial.print("  UID Length: ");Serial.print(uidLength, DEC);Serial.println(" bytes");
       Serial.print("  UID Value: ");
       nfc.PrintHex(uid, uidLength);
-      uint32_t cardid = uid[0];
+      uint32_t cardid_read = uid[0];
 
       if (uidLength == 4)
       {
         // We probably have a Mifare Classic card ... 
         
-        cardid <<= 8;
-        cardid |= uid[1];
-        cardid <<= 8;
-        cardid |= uid[2];  
-        cardid <<= 8;
-        cardid |= uid[3]; 
+        cardid_read <<= 8;
+        cardid_read |= uid[1];
+        cardid_read <<= 8;
+        cardid_read |= uid[2];  
+        cardid_read <<= 8;
+        cardid_read |= uid[3]; 
         Serial.print("Seems to be a Mifare Classic card #");
-        Serial.println(cardid);
+        Serial.println(cardid_read);
       }
       Serial.println("");
-
+      // The reader will be enabled again after DELAY_BETWEEN_CARDS ms will pass.
+      readerDisabled = true;
       timeLastCardRead = millis();
-      return String(cardid);
+      return String(cardid_read);
     }
 
     // The reader will be enabled again after DELAY_BETWEEN_CARDS ms will pass.
@@ -111,3 +139,4 @@ String handleCardDetected() {
 }
 
 //**************** SERVER FUNCTIONS*************
+
