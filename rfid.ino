@@ -18,6 +18,61 @@ String lastRead="";
 char* var[2]= {"Foi encontrado um cartão","Acionada a interrupção"};
 
 char* compareString[2]={"824051485", "4056079132"};
+
+
+//**************** NFC FUNCTIONS ***************
+
+void startListeningToNFC() {
+  // Reset our IRQ indicators
+  irqPrev = irqCurr = HIGH;
+  
+  Serial.println("Waiting for an ISO14443A Card ...");
+  nfc.startPassiveTargetIDDetection(PN532_MIFARE_ISO14443A);
+}
+
+String handleCardDetected() {
+    uint8_t success = false;
+    uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
+    uint8_t uidLength;                        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
+
+    // read the NFC tag's info
+    success = nfc.readDetectedPassiveTargetID(uid, &uidLength);
+    Serial.println(success ? "Read successful" : "Read failed (not a card?)");
+   
+    if (success) {
+      // Display some basic information about the card
+      Serial.println("Found an ISO14443A card");
+      Serial.print("  UID Length: ");Serial.print(uidLength, DEC);Serial.println(" bytes");
+      Serial.print("  UID Value: ");
+      nfc.PrintHex(uid, uidLength);
+      uint32_t cardid_read = uid[0];
+
+      if (uidLength == 4)
+      {
+        // We probably have a Mifare Classic card ... 
+        
+        cardid_read <<= 8;
+        cardid_read |= uid[1];
+        cardid_read <<= 8;
+        cardid_read |= uid[2];  
+        cardid_read <<= 8;
+        cardid_read |= uid[3]; 
+        Serial.print("Seems to be a Mifare Classic card #");
+        Serial.println(cardid_read);
+      }
+      Serial.println("");
+      // The reader will be enabled again after DELAY_BETWEEN_CARDS ms will pass.
+      readerDisabled = true;
+      timeLastCardRead = millis();
+      return String(cardid_read);
+    }
+
+    // The reader will be enabled again after DELAY_BETWEEN_CARDS ms will pass.
+    readerDisabled = true;
+}
+
+//**************** SERVER FUNCTIONS*************
+
 //************CONFIG DATABASE*********************************************
 
 
@@ -87,56 +142,4 @@ void loop(void) {
   
 }
 
-//**************** NFC FUNCTIONS ***************
-
-void startListeningToNFC() {
-  // Reset our IRQ indicators
-  irqPrev = irqCurr = HIGH;
-  
-  Serial.println("Waiting for an ISO14443A Card ...");
-  nfc.startPassiveTargetIDDetection(PN532_MIFARE_ISO14443A);
-}
-
-String handleCardDetected() {
-    uint8_t success = false;
-    uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
-    uint8_t uidLength;                        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
-
-    // read the NFC tag's info
-    success = nfc.readDetectedPassiveTargetID(uid, &uidLength);
-    Serial.println(success ? "Read successful" : "Read failed (not a card?)");
-   
-    if (success) {
-      // Display some basic information about the card
-      Serial.println("Found an ISO14443A card");
-      Serial.print("  UID Length: ");Serial.print(uidLength, DEC);Serial.println(" bytes");
-      Serial.print("  UID Value: ");
-      nfc.PrintHex(uid, uidLength);
-      uint32_t cardid_read = uid[0];
-
-      if (uidLength == 4)
-      {
-        // We probably have a Mifare Classic card ... 
-        
-        cardid_read <<= 8;
-        cardid_read |= uid[1];
-        cardid_read <<= 8;
-        cardid_read |= uid[2];  
-        cardid_read <<= 8;
-        cardid_read |= uid[3]; 
-        Serial.print("Seems to be a Mifare Classic card #");
-        Serial.println(cardid_read);
-      }
-      Serial.println("");
-      // The reader will be enabled again after DELAY_BETWEEN_CARDS ms will pass.
-      readerDisabled = true;
-      timeLastCardRead = millis();
-      return String(cardid_read);
-    }
-
-    // The reader will be enabled again after DELAY_BETWEEN_CARDS ms will pass.
-    readerDisabled = true;
-}
-
-//**************** SERVER FUNCTIONS*************
 
