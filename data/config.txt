@@ -1,0 +1,6 @@
+{
+  "total_tags": 2000,
+  "tag_master": 824051485,
+  "ssid": "default0",
+  "password": "@hfj0601"
+}
