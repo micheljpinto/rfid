@@ -9,6 +9,10 @@
 #include "config/wifi.h"
 #include "config/spiffs.h"
 
+/* Usando o terminal para ler porta serial
+ stty 9600 -F /dev/ttyUSB0 raw -echo
+cat /dev/ttyUSB0
+*/
 
 /************CONFIG I2C***************************************************/
 #define PN532_IRQ   (5)
