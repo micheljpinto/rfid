@@ -256,3 +256,20 @@ void setupSPIFFS(){
     chipid();
     readConfig(readFile(configFile));
 }
+
+void searchTag(char *path){
+  String a= readFile(path);
+  int size= a.length();
+  int pos=0;
+
+  while (pos>=0){
+    int var=a.indexOf(";",pos);
+    if (pos==0)
+      Serial.printf("Posição %i \n",var);
+    else
+      Serial.printf("Posição %i \n",var-1);
+    pos=var+1;
+  }
+
+  
+}

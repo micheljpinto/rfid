@@ -6,7 +6,10 @@
 
 
 const char* ssid =      "wifimich";
-const char* password = "mich1983";
+const char* password =  "mich1983";
+const char* ssid_ex =   "esp01";
+const char* pass_ex=    "mich1983";
+
 extern String lastReadBackup;
 // Set LED GPIO
 const int ledPin = 2;
@@ -29,11 +32,12 @@ String toggleLed(const String& vr){
   return String();
 }
 
+
 void setupWifi(){
 
     WiFi.mode(WIFI_MODE_APSTA);
 
-    WiFi.softAP("esp", password);
+    WiFi.softAP(ssid_ex, pass_ex);
     WiFi.hostname("esp3201");
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
@@ -49,10 +53,18 @@ void setupWebserver(){
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/index.html", String(), false, toggleLed);
   });
-  // Route to load style.css file
+  // Route to load documents file
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/style.css", "text/css");
   });
+    server.on("/style2.css", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/style2.css", "text/css");
+  });
+    server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/script.js", "text/json");
+  });
+  //----------------------------------------------------------------------
+
   // Route to set GPIO to HIGH
   server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){
     digitalWrite(ledPin, HIGH);    
@@ -65,13 +77,13 @@ void setupWebserver(){
   });
 
   server.on("/lastread", HTTP_GET, [](AsyncWebServerRequest *request){  
-    request->send(200, "json/text", "{read:"+ lastReadBackup+"}");
+    request->send(200, "text/json", "{read:"+ lastReadBackup+"}");
+    });
+  server.on("/addtag", HTTP_GET, [](AsyncWebServerRequest *request){  
+    request->send(SPIFFS, "/addtag.html",String(), false);
     });
 
-/*     server.on(//Write received status datas in actuator
-      "/writeatuador",
-      HTTP_POST,
-      [](AsyncWebServerRequest * request){},
+    server.on("/addtag", HTTP_POST, [](AsyncWebServerRequest * request){},
       NULL,
       [](AsyncWebServerRequest * request, uint8_t *data, size_t len, size_t index, size_t total) {
       String stream;
@@ -79,9 +91,12 @@ void setupWebserver(){
         stream+=(char)data[i];
       }
       ;
-      request->send(200,"text/html",parserJsonActuatorWrite(stream));
-    });  */
+      request->send(200, "text",String({"status:OK"}));
+      Serial.println(stream);
+    }); 
 
   // Start server
   server.begin();
   }
+
+  

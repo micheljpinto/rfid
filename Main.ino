@@ -77,7 +77,6 @@ String handleCardDetected() {
       if (uidLength == 4)
       {
         // We probably have a Mifare Classic card ... 
-        
         cardid_read <<= 8;
         cardid_read |= uid[1];
         cardid_read <<= 8;
