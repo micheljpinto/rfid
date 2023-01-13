@@ -104,7 +104,7 @@ bool writeFile(String values, String pathFile, bool appending) {
 }
 
 String readFile(char *pathFile) {
-  Serial.print("- Reading file: ");
+  Serial.print("Lendo arquivo: ");
   Serial.println(pathFile);
   SPIFFS.begin(true);
   File rFile = SPIFFS.open(pathFile, "r");
@@ -115,10 +115,9 @@ String readFile(char *pathFile) {
     while (rFile.available()) {
       values += rFile.readString();
     }
-    Serial.println("- File values: " + values);
   }
   rFile.close();
-  return values;
+  return String("["+values+"]");
 }
 
 bool deleteFile(String pathFile) {
@@ -257,19 +256,28 @@ void setupSPIFFS(){
     readConfig(readFile(configFile));
 }
 
-void searchTag(char *path){
-  String a= readFile(path);
-  int size= a.length();
-  int pos=0;
+bool searchTag(const String tag){
+  /* 
+  @param - tag: valor de tag em string a qual se deseja buscar na base de dados
+  @return - retorna TRUE caso encontrada e FALSE caso contrário.
+  */
+  const size_t CAPACITY = JSON_ARRAY_SIZE(100);
+  StaticJsonDocument<CAPACITY> doc;
+  // parse a JSON array
+  Serial.println(tag);
+  deserializeJson(doc, readFile("/tags.txt"));
+  // extract the values
+  JsonArray array = doc.as<JsonArray>();
+   //return true;
+  for(JsonVariant v : array) {
 
-  while (pos>=0){
-    int var=a.indexOf(";",pos);
-    if (pos==0)
-      Serial.printf("Posição %i \n",var);
-    else
-      Serial.printf("Posição %i \n",var-1);
-    pos=var+1;
+    if (String(v.as<unsigned int>())==tag){
+      Serial.println("tag found");
+      return true;
+    }
   }
-
-  
+  Serial.println("tag not found");
+  return false;
 }
+  
+

@@ -6,12 +6,19 @@
 //#include "FS.h"
 #include "Esp.h"
 //#include <ESPAsyncWebServer.h> 
-#include "config/wifi.h"
 #include "config/spiffs.h"
+#include "config/wifi.h"
+
 
 /* Usando o terminal para ler porta serial
  stty 9600 -F /dev/ttyUSB0 raw -echo
 cat /dev/ttyUSB0
+
+sudo /home/michel/.arduino15/packages/esp32/tools/mkspiffs/0.2.3/mkspiffs -c /home/michel/Documents/Projetos/rfid/data/ -b 4096 -p 256 -s 0x170000 /home/michel/Documents/Projetos/rfid/data.bin
+
+sudo python3 /home/michel/.arduino15/packages/esp32/tools/esptool_py/4.2.1/esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 115200 write_flash -z 0x290000 /home/michel/Documents/Projetos/rfid/data.bin
+
+
 */
 
 /************CONFIG I2C***************************************************/
@@ -25,7 +32,7 @@ int irqPrev;
 // This example uses the IRQ line, which is available when in I2C mode.
 Adafruit_PN532 nfc(PN532_IRQ, PN532_RESET);
 String lastRead="";
-String lastReadBackup="";
+String lastReadBackup="Valor ainda não lido";
 char* var[2]= {"Foi encontrado um cartão","Acionada a interrupção"};
 
 char* compareString[2]={"824051485", "4056079132"};
@@ -108,9 +115,10 @@ void setup(void) {
   
   setupSPIFFS();
   setupWifi();
-  setupWebserver(); 
+  setupWebserver();
   setupNFC();
-
+  Serial.println(readFile("/tags.txt"));
+  //searchTag("3816474025");// Teste em tags ok
 }
 
 void loop(void) {
@@ -125,27 +133,22 @@ void loop(void) {
     irqCurr = digitalRead(PN532_IRQ);
     // Compara Interrupção do sistema para entrar somente quando houver leitura na fila
     if (irqCurr == LOW && irqPrev == HIGH) {
-       Serial.println(var[0]);
-       Serial.println(var[1]); 
-       lastRead= handleCardDetected(); 
+       lastRead= handleCardDetected().c_str(); 
 
-    //Varre o array de ID's cadastrados no sistema para verificar permissão ou não de acesso 
-        for (byte i = 0; i < 2; i++)
-        {
-          if(lastRead==compareString[i]){
-            Serial.printf("Abertura permitida\n");
-            digitalWrite(2,HIGH);
-            delay(3000);
-            digitalWrite(2,LOW);
-          }
-        }
+      //Varre o array de ID's cadastrados no sistema para verificar permissão ou não de acesso 
+      if(searchTag(lastRead)){
+        Serial.print("Abertura permitida\n");
+        //Abre portão
+      } else {
+        Serial.print("Abertura negada\n");
+        //Fecha portão
+      }
       lastReadBackup=lastRead;
       lastRead="";
     }
 
     irqPrev = irqCurr;
    }
-
   
 }
 
