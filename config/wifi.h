@@ -4,34 +4,28 @@
 #include <ArduinoJson.h>
 #include "FS.h"
 
-const char* ssid =      "wifimich";
-const char* password =  "mich1983";
+const char* ssid =      "default0";
+const char* password =  "@hfj0601";
 const char* ssid_ex =   "esp01";
 const char* pass_ex=    "mich1983";
 const char* usr="Admin";
 const char* senha="mich1983";
 String tagTemp=""; //variável temporária usada para armazenar tag vinda de webIHM
-
+extern boolean readerDisabled;
 extern String lastReadBackup;
+extern long timeLastCardRead;
+extern int DELAY_OPEN;
 // Set LED GPIO
 const int ledPin = 2;
 String ledState;
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
 
-String toggleLed(const String& vr){
-  Serial.println(vr);
-  if(vr == "STATE"){
-    if(digitalRead(ledPin)){
-      ledState = "ON";
-    }
-    else{
-      ledState = "OFF";
-    }
-    Serial.print(ledState);
-    return ledState;
-  }
-  return String();
+String toggleLed(){
+  digitalWrite(ledPin,HIGH);
+  timeLastCardRead=millis();
+  readerDisabled=1; 
+  return "ok";
 }
 
 int confirmPass(String input){
@@ -61,17 +55,15 @@ int confirmPass(String input){
     return 1;
   } else {
     // Gravar tag
-    return 2;
-    
-  }
-    
+    return 2; 
+  }    
 }
 
 void setupWifi(){
 
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(ssid_ex, pass_ex);
-    WiFi.hostname("esp32");
+    //WiFi.hostname("esp32");
     WiFi.begin(ssid, password);
     int count=0;
     while (WiFi.status() != WL_CONNECTED) {
@@ -90,12 +82,13 @@ void setupWifi(){
 void setupWebserver(){
    // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/index.html", String(), false, toggleLed);
+    request->send(SPIFFS, "/index.html", String(), false);
   });
   // Route to load documents file
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/style.css", "text/css");
   });
+
     server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/script.js", "text/json");
   });
@@ -114,58 +107,78 @@ void setupWebserver(){
   //----------------------------------------------------------------------
  
   server.on("/lastread", HTTP_GET, [](AsyncWebServerRequest *request){  
-    request->send(200, "json/text", lastReadBackup);
+    request->send(200, "text/json", lastReadBackup);
     });
-
+  //PAGINA DE ADD TAG
   server.on("/addtag", HTTP_GET, [](AsyncWebServerRequest *request){  
     request->send(SPIFFS, "/addtag.html",String(), false);
     });
+  //ADICIONA TAG
+  server.on("/addtag", HTTP_POST, [](AsyncWebServerRequest * request){},
+    NULL,
+    [](AsyncWebServerRequest * request, uint8_t *data, size_t len, size_t index, size_t total) {
+    String stream;
+    for (size_t i = 0; i < len; i++) {
+      stream+=(char)data[i];
+    }
+    switch (confirmPass(stream))
+    {
+    case 0:
+      Serial.println("Usuário ou senha incorretos");
+      request->send(200, "javascript/text", "console.log(\"Usuário ou senha incorretos\")");
+      break;
 
-    server.on("/addtag", HTTP_POST, [](AsyncWebServerRequest * request){},
-      NULL,
-      [](AsyncWebServerRequest * request, uint8_t *data, size_t len, size_t index, size_t total) {
-      String stream;
-      for (size_t i = 0; i < len; i++) {
-        stream+=(char)data[i];
-      }
-      switch (confirmPass(stream))
-      {
-      case 0:
-        Serial.println("Usuário ou senha incorretos");
-        request->send(200, "javascript/text", "console.log(\"Usuário ou senha incorretos\")");
-        break;
+      case 1:
+      Serial.println("Tag ja existe");
+      request->send(200, "javascript/text", "console.log(\"Tag ja existe\")");
+      break;
+    default:
+      Serial.println("Cadastrar tags");
+      writeFile(tagTemp+",","/tags.txt",true);
+      request->send(200, "javascript/text", "console.log(\"Cadastrar tags\")");
+      break;
+    }       
+    
+    Serial.println(stream);
+  }); 
+    
+    //REMOVE TAG
+    server.on("/rmtag", HTTP_POST, [](AsyncWebServerRequest * request){},
+    NULL,
+    [](AsyncWebServerRequest * request, uint8_t *data, size_t len, size_t index, size_t total) {
+    String stream;
+    for (size_t i = 0; i < len; i++) {
+      stream+=(char)data[i];
+    }
+    switch (confirmPass(stream))
+    {
+    case 0:
+      Serial.println("Usuário ou senha incorretos");
+      request->send(200, "javascript/text", "console.log(\"Usuário ou senha incorretos\")");
+      break;
 
-       case 1:
-        Serial.println("Tag ja existe");
-        request->send(200, "javascript/text", "console.log(\"Tag ja existe\")");
-        break;
-      default:
-        Serial.println("Cadastrar tags");
-        writeFile(tagTemp+",","/tags.txt",true);
-        request->send(200, "javascript/text", "console.log(\"Cadastrar tags\")");
-        break;
-      }       
+      case 1:
+      Serial.println("Tag não existe");
+      request->send(200, "javascript/text", "console.log(\"Tag ja existe\")");
+      break;
+    default:
+      Serial.println("Descadastrar tags");
+      deleteTag(tagTemp);
+      request->send(200, "javascript/text", "console.log(\"Descadastrar tag\")");
+      break;
+    }       
+    
+    Serial.println(stream);
+  }); 
       
-      Serial.println(stream);
-    }); 
+  server.on("/atuador", HTTP_GET, [](AsyncWebServerRequest *request){
+    //digitalWrite(2,HIGH);
+    //timeLastCardRead=millis();
+    //readerDisabled=1;
+    request->send(200, "text/html",toggleLed());
+       
     
-    
-    server.on("/atuador", HTTP_POST, [](AsyncWebServerRequest * request){},
-      NULL,
-      [](AsyncWebServerRequest * request, uint8_t *data, size_t len, size_t index, size_t total) {
-      String stream;
-      for (size_t i = 0; i < len; i++) {
-        stream+=(char)data[i];
-      }
-      if (stream=="liga"){
-        digitalWrite(ledPin, HIGH);  
-        request->send(200, "json/text","[off]");
-      } else {
-        digitalWrite(ledPin, LOW);  
-        request->send(200, "json/text","[on]");
-      }
-      Serial.println(stream);
-    }); 
+  });
 
   // Start server
   server.begin();

@@ -11,20 +11,20 @@
 
 
 /* Usando o terminal para ler porta serial
- stty 9600 -F /dev/ttyUSB0 raw -echo
+stty 9600 -F /dev/ttyUSB0 raw -echo
 cat /dev/ttyUSB0
 
 sudo /home/michel/.arduino15/packages/esp32/tools/mkspiffs/0.2.3/mkspiffs -c /home/michel/Documents/Projetos/rfid/data/ -b 4096 -p 256 -s 0x170000 /home/michel/Documents/Projetos/rfid/data.bin
 
 sudo python3 /home/michel/.arduino15/packages/esp32/tools/esptool_py/4.2.1/esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 115200 write_flash -z 0x290000 /home/michel/Documents/Projetos/rfid/data.bin
 
-
 */
 
 /************CONFIG I2C***************************************************/
 #define PN532_IRQ   (5)
 #define PN532_RESET (4)  // Not connected by default on the NFC Shield
-const int DELAY_BETWEEN_CARDS = 1000;
+const int DELAY_BETWEEN_CARDS = 4000;
+int DELAY_OPEN=0;
 long timeLastCardRead = 0;
 boolean readerDisabled = false;
 int irqCurr;
@@ -111,7 +111,7 @@ void setup(void) {
   digitalWrite(2,LOW);
  
   Serial.begin(115200);
-  while (!Serial) delay(10); // for Leonardo/Micro/Zero
+  while (!Serial) delay(10); 
   
   setupSPIFFS();
   setupWifi();
@@ -119,17 +119,18 @@ void setup(void) {
   setupNFC();
   Serial.println(readFile("/tags.txt"));
   //searchTag("3816474025");// Teste em tags ok
+  deleteTag("3816474025");
 }
 
 void loop(void) {
   //Rotina para aguardar um tempo de delay após lido o ultimo cartão
   if (readerDisabled) {
-    if (millis() - timeLastCardRead > DELAY_BETWEEN_CARDS) {
+    if (millis()-timeLastCardRead > DELAY_BETWEEN_CARDS) {
       readerDisabled = false;
+      digitalWrite(ledPin,LOW);
       startListeningToNFC();
     }
   } else {
-
     irqCurr = digitalRead(PN532_IRQ);
     // Compara Interrupção do sistema para entrar somente quando houver leitura na fila
     if (irqCurr == LOW && irqPrev == HIGH) {

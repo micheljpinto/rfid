@@ -1,20 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>ESP32 Web Server</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" type="text/css" href="./style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <script src="./bootstrap.min.js"></script>
+    <script src="./jquery.min.js"></script> 
+    <!------ Include the above in your HEAD tag ---------->
+    <link href="./style.css" rel="stylesheet" type="text/css">
+    <script src="./script.js" defer type="text/javascript"></script>
+    
+    <title>Tags do controlador</title>
 </head>
-<body>
-  <h1>ESP32 Web Server</h1>
-  <p>GPIO state: <strong> %STATE%</strong></p>
-  <p><a href="/on"><button class="button">ON</button></a></p>
-  <p><a href="/off"><button class="button button2">OFF</button></a></p>
-</body>
+<body>  
+      <!-- parte do atuador -->
+      <div class="wrapper fadeInDown">
+        <div id="formContent">
+          <!-- Tabs Titles -->
+      
+          <!-- Icon -->
+          <div class="fadeIn first">
+          <h3> Portão </h3>
+          </div>
+          <!-- Login Form -->
+          <button type="button" class="btn btn-primary btn-lg disabled" id="open">Abrir...</button>           
+          <p></p>
+        </div>
+        <p></p>
+      </div>
+
+    <!-- **********************************************************************   -->
+
+    <div class="wrapper fadeInDown">
+      <div id="formContent">
+        <!-- Tabs Titles -->
+    
+        <!-- Icon -->
+         <div class="fadeIn first">
+        <h3> Adicione nova TAG </h3>
+        </div>
+    
+        <!-- Login Form -->
+        <form class="form">
+          <input type="text" id="login" class="fadeIn second" name="user" placeholder="login" autocomplete="off">
+          <input type="password" id="password" class="fadeIn third" name="pass" placeholder="password" autocomplete="off">
+          <input type="text" id="tag" class="fadeIn fourth" name="tag" placeholder="tag" autocomplete="off">
+          <input type="submit" class="fadeIn five" value="Gravar TAG">
+        </form>
+        
+        <div>
+          <div>
+            <button type="button" class="btn btn-primary btn-lg disabled" id="bt">Mostrar última tag</button>  
+            <p id="ultima_tag"></p>
+          </div>
+        </div>
+      
+      </div>
+    </div>
+
 </html>
-
-
-

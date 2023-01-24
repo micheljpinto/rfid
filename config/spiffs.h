@@ -104,8 +104,8 @@ bool writeFile(String values, String pathFile, bool appending) {
 }
 
 String readFile(char *pathFile) {
-  Serial.print("Lendo arquivo: ");
-  Serial.println(pathFile);
+  //Serial.print("Lendo arquivo: ");
+  //Serial.println(pathFile);
   SPIFFS.begin(true);
   File rFile = SPIFFS.open(pathFile, "r");
   String values;
@@ -270,7 +270,6 @@ bool searchTag(const String tag){
   JsonArray array = doc.as<JsonArray>();
    //return true;
   for(JsonVariant v : array) {
-
     if (String(v.as<unsigned int>())==tag){
       Serial.println("tag found");
       return true;
@@ -279,5 +278,59 @@ bool searchTag(const String tag){
   Serial.println("tag not found");
   return false;
 }
-  
+
+int searchTagIndex(const String tag){
+  /* 
+  @param - tag: valor de tag em string a qual se deseja buscar na base de dados
+  @return - retorna TRUE caso encontrada e FALSE caso contrário.
+  */
+  const size_t CAPACITY = JSON_ARRAY_SIZE(100);
+  StaticJsonDocument<CAPACITY> doc;
+  // parse a JSON array
+  //Serial.println(tag);
+  deserializeJson(doc, readFile("/tags.txt"));
+  // extract the values
+  JsonArray array = doc.as<JsonArray>();
+   //return true;
+   int i=0;
+  for(JsonVariant v : array) {
+    if (String(v.as<unsigned int>())==tag){
+      Serial.println("tag index found");
+      return i;
+    }
+    i++;
+  }
+  Serial.println("tag index not found");
+  return -1;
+}
+
+bool deleteTag(const String tag){
+  int index= searchTagIndex(tag);
+  Serial.printf("Index:%i \n",index);
+  if(index>=0 ){
+    const size_t CAPACITY = JSON_ARRAY_SIZE(100)+16;
+    StaticJsonDocument<CAPACITY> doc;
+    Serial.println(tag);
+    deserializeJson(doc, readFile("/tags.txt"));
+    JsonArray array = doc.as<JsonArray>();
+    array.remove(index);
+    Serial.printf("Serialize json\n");
+    serializeJsonPretty(array,Serial);
+    String teste="";
+    Serial.printf("Tentativa em String\n");
+    for(JsonVariant v : array) {
+      String t=v.as<String>()+",";
+      Serial.printf("l=%s\n",t);
+      if (t=="null,")
+        continue;
+      teste+=t;
+    }
+    Serial.println(teste);
+    writeFile(teste,"/tags.txt",false);
+    return true;
+  } else {
+    return false;
+  }
+
+}  
 

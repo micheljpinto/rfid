@@ -4,10 +4,13 @@
 //document.addEventListener('submit',sendJSON())
 
 const addtagEndpoint= '/addtag';
-const addtagEndpoint2= "/lastread";
+const addtagEndpoint2= '/lastread';
 //const addtagEndpoint="https://63bff7ffa177ed68abbc883c.mockapi.io/api/v1/tag";
 //const addtagEndpoint2= "https://63bff7ffa177ed68abbc883c.mockapi.io/api/v1/lastread";
 const formEl= document.querySelector('.form');
+const button = document.getElementById("bt");
+
+button.addEventListener("click",printSensors);
 
 formEl.addEventListener('submit',(e)=>{
     e.preventDefault();
@@ -50,11 +53,16 @@ async function postData(url, dataForm = {}) {
 //     setInterval (printSensors, 7000);
 // }, false);
 
-var button = document.getElementById("bt");
-button.addEventListener("click",printSensors());
 
-async function printSensors(){
+
+function printSensors(){
     fetch(addtagEndpoint2)
     .then(response => response.text())
     .then(text => document.getElementById("ultima_tag").innerText=text) 
 } 
+
+
+const bt_atuador= document.getElementById('open');
+bt_atuador.addEventListener('click',()=>{
+    fetch('/atuador');
+})  
