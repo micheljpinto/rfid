@@ -34,9 +34,11 @@ Adafruit_PN532 nfc(PN532_IRQ, PN532_RESET);
 String lastRead="";
 String lastReadBackup="Valor ainda não lido";
 char* var[2]= {"Foi encontrado um cartão","Acionada a interrupção"};
-
+int OPEN_GATE = 33;
+int BT_MANUAL=32;
+int LED_OK=16;
 char* compareString[2]={"824051485", "4056079132"};
-
+volatile bool handOpen=0;
 //**************** NFC FUNCTIONS *****************************************
 void setupNFC(){
   nfc.begin();
@@ -105,11 +107,20 @@ String handleCardDetected() {
 }
 
 //***************** LOOP AND SETUP****************************************
+unsigned long timestamp_ultimo_acionamento = 0;
+ 
+/* Função ISR (chamada quando há geração da
+interrupção) */
+void IRAM_ATTR btInterrupt(){
+  handOpen=HIGH;
+}
 
 void setup(void) {
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(2,LOW);
- 
+  pinMode(OPEN_GATE, OUTPUT);
+  pinMode(BT_MANUAL, INPUT_PULLUP);
+  pinMode(LED_OK, OUTPUT);
+  digitalWrite(OPEN_GATE,HIGH);
+  digitalWrite(LED_OK,LOW);
   Serial.begin(115200);
   while (!Serial) delay(10); 
   
@@ -117,17 +128,22 @@ void setup(void) {
   setupWifi();
   setupWebserver();
   setupNFC();
+  attachInterrupt(BT_MANUAL, btInterrupt,CHANGE);
   Serial.println(readFile("/tags.txt"));
+  
   //searchTag("3816474025");// Teste em tags ok
-  deleteTag("3816474025");
+  //deleteTag("3816474025");
 }
 
 void loop(void) {
   //Rotina para aguardar um tempo de delay após lido o ultimo cartão
+  if(handOpen)
+    toggleLed();
   if (readerDisabled) {
     if (millis()-timeLastCardRead > DELAY_BETWEEN_CARDS) {
       readerDisabled = false;
-      digitalWrite(ledPin,LOW);
+      digitalWrite(OPEN_GATE,HIGH);
+      digitalWrite(LED_OK,LOW);
       startListeningToNFC();
     }
   } else {
@@ -139,7 +155,7 @@ void loop(void) {
       //Varre o array de ID's cadastrados no sistema para verificar permissão ou não de acesso 
       if(searchTag(lastRead)){
         Serial.print("Abertura permitida\n");
-        //Abre portão
+        toggleLed();
       } else {
         Serial.print("Abertura negada\n");
         //Fecha portão

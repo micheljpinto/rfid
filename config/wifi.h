@@ -16,15 +16,20 @@ extern String lastReadBackup;
 extern long timeLastCardRead;
 extern int DELAY_OPEN;
 // Set LED GPIO
-const int ledPin = 2;
+extern int OPEN_GATE;
+extern int BT_MANUAL;
+extern int LED_OK;
+extern volatile bool handOpen;
 String ledState;
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
 
 String toggleLed(){
-  digitalWrite(ledPin,HIGH);
+  digitalWrite(OPEN_GATE,LOW);
   timeLastCardRead=millis();
   readerDisabled=1; 
+  handOpen=0;
+  digitalWrite(LED_OK,HIGH);
   return "ok";
 }
 
@@ -109,6 +114,10 @@ void setupWebserver(){
   server.on("/lastread", HTTP_GET, [](AsyncWebServerRequest *request){  
     request->send(200, "text/json", lastReadBackup);
     });
+  
+  server.on("/list", HTTP_GET, [](AsyncWebServerRequest *request){  
+    request->send(200, "text/json", readFile("/tags.txt"));
+    });
   //PAGINA DE ADD TAG
   server.on("/addtag", HTTP_GET, [](AsyncWebServerRequest *request){  
     request->send(SPIFFS, "/addtag.html",String(), false);
@@ -158,13 +167,13 @@ void setupWebserver(){
       break;
 
       case 1:
-      Serial.println("Tag não existe");
+      deleteTag(tagTemp);
       request->send(200, "javascript/text", "console.log(\"Tag ja existe\")");
+      Serial.println("Tag descadastrada");
       break;
     default:
-      Serial.println("Descadastrar tags");
-      deleteTag(tagTemp);
       request->send(200, "javascript/text", "console.log(\"Descadastrar tag\")");
+      Serial.println("Tag inexistente");
       break;
     }       
     

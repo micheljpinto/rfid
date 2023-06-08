@@ -1,32 +1,53 @@
-//document.addEventListener('DOMContentLoaded', receiveState());
-//document.addEventListener('DOMContentLoaded', getData());
-//DADOS FORMS 
-//document.addEventListener('submit',sendJSON())
 
-const addtagEndpoint= '/addtag';
-const addtagEndpoint2= '/lastread';
-//const addtagEndpoint="https://63bff7ffa177ed68abbc883c.mockapi.io/api/v1/tag";
-//const addtagEndpoint2= "https://63bff7ffa177ed68abbc883c.mockapi.io/api/v1/lastread";
-const formEl= document.querySelector('.form');
-const button = document.getElementById("bt");
+window.addEventListener('DOMContentLoaded', function () {
+    const addtag= '/addtag';
+    const rmtag= '/rmtag';
+    const lastRead= '/lastread';
+    const formEl=   document.querySelector('.form');
+    const button = document.getElementById('bt');
+    const bt_atuador= document.getElementById('open');
+    const el = document.getElementById("checagem");
 
-button.addEventListener("click",printSensors);
+    button.addEventListener("click",printSensors);
 
-formEl.addEventListener('submit',(e)=>{
-    e.preventDefault();
-    const formData=new FormData(formEl);
-    const dataForm= Object.fromEntries(formData);
-    //console.log(data);
-    postData (addtagEndpoint,dataForm) .then((data) => {
-        console.log(data); // JSON data parsed by `data.json()` call
-      });
-      formEl.reset();
+    formEl.addEventListener('submit',(e)=>{
+        e.preventDefault();  
+        const formData=new FormData(formEl);
+        const dataForm= Object.fromEntries(formData);
+       
+        postData (dataForm,returnLink) 
+        .then((data) => {
+            console.log(data); // JSON data parsed by `data.json()` call
+          });
+          formEl.reset();
+    })
+
+    bt_atuador.addEventListener('click',()=>{
+        fetch('/atuador');
+    })  
+
+    function returnLink(){
+        var link;
+        if(el.checked){
+            link=rmtag;
+        }else{
+            link=addtag;
+        }
+        return link;
+    }
+
+    function printSensors(){
+        fetch(lastRead)
+        .then(response => response.text())
+        .then(text => document.getElementById("ultima_tag").innerText=text) 
+    } 
+    
 })
 
-
-// Example POST method implementation:
-async function postData(url, dataForm = {}) {
+async function postData(dataForm = {},callback) {
     // Default options are marked with *
+    var url= callback();   
+
     const response = await fetch(url, {
     method: 'POST', // *GET, POST, PUT, DELETE, etc.
     mode: 'cors', // no-cors, *cors, same-origin
@@ -48,21 +69,3 @@ async function postData(url, dataForm = {}) {
 }
 
 
-
-// window.addEventListener ('load', function () {
-//     setInterval (printSensors, 7000);
-// }, false);
-
-
-
-function printSensors(){
-    fetch(addtagEndpoint2)
-    .then(response => response.text())
-    .then(text => document.getElementById("ultima_tag").innerText=text) 
-} 
-
-
-const bt_atuador= document.getElementById('open');
-bt_atuador.addEventListener('click',()=>{
-    fetch('/atuador');
-})  
