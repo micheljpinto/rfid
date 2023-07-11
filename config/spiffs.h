@@ -257,7 +257,7 @@ void setupSPIFFS(){
 }
 
 bool searchTag(const String tag){
-  /* 
+  /* Efetua a busca de uma dada string lida na base de dados se ela existe retorna true, caso nao retorna false.
   @param - tag: valor de tag em string a qual se deseja buscar na base de dados
   @return - retorna TRUE caso encontrada e FALSE caso contrário.
   */
